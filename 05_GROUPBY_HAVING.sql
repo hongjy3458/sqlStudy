@@ -168,8 +168,70 @@ ORDER BY AVG(SALARY) DESC
 ;
 
 
+/*
+    <집계 함수>
+        그룹별 산출한 결과 값의 중간 집계를 계산 해주는 함수
+*/
+
+-- 직급별 급여의 합계를 조회
+SELECT JOB_CODE, SUM(SALARY)
+FROM EMPLOYEE
+GROUP BY JOB_CODE
+ORDER BY JOB_CODE;
+
+-- 마지막 행에 전체 총 급여의 합계까지 조회
+SELECT JOB_CODE, SUM(SALARY)
+FROM EMPLOYEE
+GROUP BY ROLLUP(JOB_CODE)
+ORDER BY JOB_CODE;
+
+SELECT JOB_CODE, SUM(SALARY)
+FROM EMPLOYEE
+GROUP BY CUBE(JOB_CODE)
+ORDER BY JOB_CODE;
+
+-- 부서 코드도 같고 직급 코드도 같은 사원들을 그룹 지어서 급여의 합계를 조회
+SELECT DEPT_CODE, JOB_CODE, SUM(SALARY)
+FROM EMPLOYEE
+GROUP BY DEPT_CODE, JOB_CODE
+ORDER BY DEPT_CODE, JOB_CODE;
+
+-- ROLLUP(컬럼 1, 컬럼 2, ...) -> 컬럼 1을 가지고 중간집계를 내는 함수
+SELECT DEPT_CODE, JOB_CODE, SUM(SALARY)
+FROM EMPLOYEE
+GROUP BY ROLLUP(DEPT_CODE, JOB_CODE)
+ORDER BY DEPT_CODE, JOB_CODE;
+
+-- CUBE(컬럼 1, 컬럼 2, ...) -> 컬럼 1을 가지고 중간집계를 내고, 컬럼 2를 가지고 중간집계를 낸다. 즉, 전달되는 컬럼 모두 집계하는 함수
+SELECT DEPT_CODE, JOB_CODE, SUM(SALARY)
+FROM EMPLOYEE
+GROUP BY CUBE(DEPT_CODE, JOB_CODE)
+ORDER BY DEPT_CODE, JOB_CODE;
 
 
+
+/*
+    <집합 연산자>
+        여러 개의 쿼리문을 가지고 하나의 쿼리문으로 만드는 연산자이다.
+        
+        UNION       : 두 쿼리문을 수행한 결과값을 더한 후 중복되는 행은 제거한다. (합집합)
+        UNION ALL   : UNION과 동일하게 두 쿼리문을 수행한 결과값을 더하고 중복은 허용한다. (합집합)
+        INTERSECT   : 두 쿼리문을 수행한 결과값에 중복된 결과값만 추출한다. (교집합)
+        MINUS       : 선행 쿼리의 결과값에서 후행 쿼리의 결과값을 뺀 나머지 결과값만 추출한다. (차집합)
+*/
+
+--부서코드 D5인 사원들 조회
+
+SELECT *
+FROM EMPLOYEE
+WHERE DEPT_CODE = 'D5'
+;
+
+--급여가 300만원 초과인 사원들 조회
+SELECT *
+FROM EMPLOYEE
+WHERE SALARY > 3000000
+;
 
 
 
