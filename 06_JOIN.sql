@@ -337,8 +337,6 @@ HAVING SUM(SALARY) > 10000000
 --    급여 등급이 S3, S4인 경우 '중급'
 --    급여 등급이 S5, S6인 경우 '초급'
 
----이거
-
 SELECT
     EMP_ID
     , EMP_NAME
