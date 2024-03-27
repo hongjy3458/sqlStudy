@@ -1,3 +1,5 @@
+-- 서브쿼리 (SUBQUERY)
+
 /*
     <SUBQUERY>
         하나의 SQL 문 안에 포함된 또 다른 SQL 문을 뜻한다. 
@@ -12,13 +14,14 @@ WHERE EMP_NAME = '노옹철'
 
 SELECT *
 FROM EMPLOYEE
-WHERE DEPT_CODE =
+WHERE DEPT_CODE = 
 (
     SELECT DEPT_CODE
     FROM EMPLOYEE
     WHERE EMP_NAME = '노옹철'
 )
 ;
+
 
 /*
     <서브 쿼리 구분>
@@ -28,6 +31,7 @@ WHERE DEPT_CODE =
         2) 다중행 서브 쿼리        : 서브 쿼리의 조회 결과 값의 행의 개수가 여러 행 일 때
         3) 다중열 서브 쿼리        : 서브 쿼리의 조회 결과 값이 한 행이지만 칼럼이 여러개 일때
         4) 다중행, 다중열 서브 쿼리 : 서브 쿼리의 조회 결과 값이 여러행, 여러열 일 때
+        5) 인라인 뷰
         
         * 서브 쿼리의 유형에 따라서 서브 쿼리 앞에 붙는 연산자가 달라진다.
         
@@ -37,9 +41,7 @@ WHERE DEPT_CODE =
 */
 
 -- 1) 전 직원의 평균 급여보다 급여를 적게 받는 직원들의 이름, 직급 코드, 급여 조회
-
-
-SELECT 
+SELECT  
     EMP_NAME    AS 이름
     , JOB_CODE  AS "직급 코드"
     , SALARY    AS 급여
@@ -47,26 +49,31 @@ FROM EMPLOYEE
 WHERE SALARY < 
                 (
                     SELECT AVG(SALARY)
-                    FROM EMPLOYEE
+                    FROM EMPLOYEE    
                 )
 ;
 
--- 2) 최저 급여를 받는 직원의 사번, 이름, 직급 코드, 급여, 입사일 조회
 
+-- 2) 최저 급여를 받는 직원의 사번, 이름, 직급 코드, 급여, 입사일 조회
 SELECT 
-    EMP_ID
-    , EMP_NAME
-    , JOB_CODE
-    , SALARY
-    , HIRE_DATE
+    EMP_ID      사번
+    , EMP_NAME  이름
+    , JOB_CODE  "직급 코드"
+    , SALARY    급여
+    , HIRE_DATE 입사일
 FROM EMPLOYEE
-WHERE SALARY = (
+WHERE SALARY =  ( 
                     SELECT MIN(SALARY)
                     FROM EMPLOYEE
                 )
 ;
 
+
 -- 3) 노옹철 사원의 급여보다 더 많은 급여받는 사원들의 사번, 사원명, 부서명, 직급 코드, 급여 조회
+SELECT SALARY
+FROM EMPLOYEE
+WHERE EMP_NAME = '노옹철'
+;
 
 SELECT 
     EMP_ID
@@ -74,8 +81,8 @@ SELECT
     , DEPT_TITLE
     , JOB_CODE
     , SALARY
-FROM EMPLOYEE E
-JOIN DEPARTMENT D ON D.DEPT_ID = E.DEPT_CODE
+FROM EMPLOYEE   E
+JOIN DEPARTMENT D ON E.DEPT_CODE = D.DEPT_ID
 WHERE SALARY > (
                     SELECT SALARY
                     FROM EMPLOYEE
@@ -84,32 +91,40 @@ WHERE SALARY > (
 ;
 
 -- 4) 부서별 급여의 합이 가장 큰 부서의 부서 코드, 급여의 합 조회
-SELECT
-    E.DEPT_CODE
-    , SUM(SALARY)
-FROM DEPARTMENT D
-JOIN EMPLOYEE E ON D.DEPT_ID = E.DEPT_CODE
+SELECT MAX(SUM(SALARY))
+FROM EMPLOYEE
 GROUP BY DEPT_CODE
-HAVING SUM(SALARY) =  (
+;
+
+
+SELECT DEPT_CODE , SUM(SALARY)
+FROM EMPLOYEE
+GROUP BY DEPT_CODE
+HAVING SUM(SALARY) =    (
                             SELECT MAX(SUM(SALARY))
                             FROM EMPLOYEE
                             GROUP BY DEPT_CODE
-                    )
+                        )
 ;
-
 
 
 
 -- 5) 전지연 사원이 속해있는 부서원들 조회 (단, 전지연 사원은 제외)
+SELECT DEPT_CODE
+FROM EMPLOYEE
+WHERE EMP_NAME = '전지연'
+;
+
 SELECT *
 FROM EMPLOYEE
 WHERE DEPT_CODE = (
-                    SELECT DEPT_CODE
-                    FROM EMPLOYEE
-                    WHERE EMP_NAME = '전지연'
+                        SELECT DEPT_CODE
+                        FROM EMPLOYEE
+                        WHERE EMP_NAME = '전지연'
                     )
-                   AND EMP_NAME != '전지연'
+AND EMP_NAME != '전지연'
 ;
+
 
 /*
     <다중행 서브 쿼리>
@@ -129,35 +144,46 @@ WHERE DEPT_CODE = (
 */
 
 -- 1) 각 부서별 최고 급여를 받는 직원의 이름, 직급 코드, 부서 코드, 급여 조회
+SELECT MAX(SALARY)
+FROM EMPLOYEE
+GROUP BY DEPT_CODE
+;
 
 SELECT EMP_NAME, JOB_CODE, DEPT_CODE, SALARY
 FROM EMPLOYEE
 WHERE SALARY IN (
-                SELECT MAX(SALARY)
-                FROM EMPLOYEE
-                GROUP BY DEPT_CODE
+                    SELECT MAX(SALARY)
+                    FROM EMPLOYEE
+                    GROUP BY DEPT_CODE
                 )
 ;
 
--- 2) 전 직원들에 대해 사번, 이름, 부서 코드, 구분(사수/사원)
 
-SELECT
-    EMP_ID
-    , EMP_NAME
-    , DEPT_CODE
+-- 2) 전 직원들에 대해 사번, 이름, 부서 코드, 구분(사수/사원)
+SELECT 
+    EMP_ID          AS 사번
+    , EMP_NAME      AS 이름
+    , DEPT_CODE     AS 부서코드
     , CASE 
-    WHEN E1.EMP_ID IN (SELECT DISTINCT(MANAGER_ID)
-                        FROM EMPLOYEE
-                        WHERE MANAGER_ID IS NOT NULL) THEN '사수'
-                        ELSE '사원'
-                        END AS 구분
-FROM EMPLOYEE E1
-ORDER BY 구분 DESC
+        WHEN EMP_ID IN (
+                            SELECT DISTINCT(MANAGER_ID)
+                            FROM EMPLOYEE
+                            WHERE MANAGER_ID IS NOT NULL
+                        ) THEN '사수'        
+        ELSE '사원'     
+    END AS 구분
+FROM EMPLOYEE
+;
+
+
+SELECT DISTINCT(MANAGER_ID)
+FROM EMPLOYEE
+WHERE MANAGER_ID IS NOT NULL
 ;
 
 
 -- 3) 대리 직급임에도 과장 직급들의 최소 급여보다 많이 받는 직원의 사번, 이름, 직급명, 급여 조회
-SELECT
+SELECT 
     EMP_ID
     , EMP_NAME
     , JOB_NAME
@@ -165,40 +191,68 @@ SELECT
 FROM EMPLOYEE E
 JOIN JOB J
 ON E.JOB_CODE = J.JOB_CODE
-WHERE SALARY > ANY(SELECT SALARY
+WHERE JOB_NAME = '대리'
+AND SALARY > ANY( 
+                    SELECT SALARY
                     FROM EMPLOYEE E
                     JOIN JOB J
                     ON E.JOB_CODE = J.JOB_CODE
                     WHERE JOB_NAME = '과장'
-                    )
-        AND JOB_NAME = '대리'
+                )
 ;
 
--- 4) 과장 직급임에도 차장 직급의 최대 급여보다 더 많이 받는 직원들의 사번, 이름, 직급명, 급여 조회
-
-SELECT
-    E.EMP_ID
-    , E.EMP_NAME
-    , J.JOB_NAME
-    , E.SALARY
+SELECT SALARY
 FROM EMPLOYEE E
-JOIN JOB J ON E.JOB_CODE = J.JOB_CODE
-WHERE J.JOB_NAME = '과장'
-    AND SALARY > ALL(
-        SELECT E.SALARY
-        FROM EMPLOYEE E
-        JOIN JOB J ON (E.JOB_CODE = J.JOB_CODE)
-        WHERE J.JOB_NAME = '차장')
+JOIN JOB J
+ON E.JOB_CODE = J.JOB_CODE
+WHERE JOB_NAME = '과장'
 ;
+
+
+-- 4) 과장 직급임에도 차장 직급의 최대 급여보다 더 많이 받는 직원들의 사번, 이름, 직급명, 급여 조회 
+-- 과장 직급임에도 차장 직급의 최대 급여보다 더 많이 받는 직원
+SELECT E.EMP_ID, E.EMP_NAME, J.JOB_NAME, E.SALARY
+FROM EMPLOYEE E
+JOIN JOB J ON (E.JOB_CODE = J.JOB_CODE)
+WHERE J.JOB_NAME = '과장'
+  AND SALARY > ALL(
+    SELECT E.SALARY
+    FROM EMPLOYEE E
+    JOIN JOB J ON (E.JOB_CODE = J.JOB_CODE)
+    WHERE J.JOB_NAME = '차장'
+  ); 
+
 
 /*
     <다중열 서브 쿼리>
         조회 결과 값은 한 행이지만 나열된 칼럼 수가 여러 개일 때
 */
 
-
 -- 1) 하이유 사원과 같은 부서 코드, 같은 직급 코드에 해당하는 사원들 조회
+SELECT *
+FROM EMPLOYEE
+WHERE (DEPT_CODE, JOB_CODE) = (
+                                    SELECT DEPT_CODE, JOB_CODE
+                                    FROM EMPLOYEE
+                                    WHERE EMP_NAME ='하이유'
+                                )
+;
 
+-- 2) 박나라 사원과 직급 코드가 일치하면서 같은 사수를 가지고 있는 사원의 사번, 이름, 직급 코드, 사수 사번, 조회
+SELECT EMP_ID, EMP_NAME, JOB_CODE, MANAGER_ID
+FROM EMPLOYEE
+WHERE (JOB_CODE, MANAGER_ID) = (
+    SELECT JOB_CODE, MANAGER_ID
+    FROM EMPLOYEE
+    WHERE EMP_NAME = '박나라'
+);
+
+/*
+    <다중행 다중열 서브 쿼리>
+        서브 쿼리의 조회 결과값이 여러 행, 여러 열일 경우
+*/
+
+-- 1. 각 직급별로 최소 급여를 받는 사원들의 사번, 이름, 직급 코드, 급여 조회
 SELECT EMP_ID, EMP_NAME, JOB_CODE, SALARY
 FROM EMPLOYEE
 WHERE (JOB_CODE, SALARY) IN (
@@ -207,48 +261,74 @@ WHERE (JOB_CODE, SALARY) IN (
     GROUP BY JOB_CODE
 );
 
--- 2) 박나라 사원과 직급 코드가 일치하면서 같은 사수를 가지고 있는 사원의 사번, 이름, 직급 코드, 사수 사번, 조회
-
-SELECT EMP_ID, EMP_NAME, JOB_CODE, MANAGER_ID
-FROM EMPLOYEE
-WHERE (JOB_CODE, MANAGER_ID) IN (
-    SELECT JOB_CODE, MANAGER_ID
-    FROM EMPLOYEE
-    WHERE EMP_NAME = '박나라'
-);
 
 /*
     <인라인 뷰>
         FROM 절에 서브 쿼리를 제시하고, 서브 쿼리를 수행한 결과를 테이블 대신 사용한다.
 */
 
-SELECT NICKNAME, CONTACT
-FROM
+SELECT NICKNAME , CONTACT
+FROM 
 (
-    SELECT
+    SELECT 
         EMP_NAME AS NICKNAME
         , PHONE AS CONTACT
     FROM EMPLOYEE
 )
 ;
 
---ROWNUM
-SELECT EMP_NAME, SALARY, ROWNUM
+--ROWNUM : 오라클에서 제공하는 칼럼, 조회된 순서대로 1 부터 순번을 부여하는 칼럼
+--WITH : 
+--RANK : 
+
+
+-- TOP-N 분석 (급여 상위 n명 분석) -- ROWNUM
+SELECT *
 FROM 
 (
-    SELECT EMP_NAME, SALARY
+    SELECT T.EMP_NAME, T.SALARY, ROWNUM AS RNUM
+    FROM 
+    (
+        SELECT *
+        FROM EMPLOYEE
+        ORDER BY SALARY DESC
+    ) T
+)
+WHERE RNUM BETWEEN 5 AND 10
+;
+
+-- TOP-N 분석 (급여 상위 n명 분석) -- WITH
+WITH ABC AS
+(
+    SELECT EMP_NAME , SALARY 
     FROM EMPLOYEE
     ORDER BY SALARY DESC
 )
-WHERE ROWNUM BETWEEN 1 AND 20
+SELECT *
+FROM ABC
+WHERE ROWNUM <= 10
 ;
 
---RANK
-
---WITH
 
 
+-- TOP-N 분석 (급여 상위 n명 분석) -- RANK
 
+/*
+    <RANK 함수>
+        [문법]
+        RANK() OVER(정렬 기준) 
+        DENSE_RANK() OVER(정렬 기준)
+        
+        RANK() OVER(정렬 기준)         : 동일한 순위 이후의 등수를 동일한 인원수만큼 건너뛰고 순위를 계산한다.
+                                         (EX. 공동 1위가 2명이면 다음 순위는 3위)
+        DENSE_RANK() OVER(정렬 기준)   : 동일한 순위 이후의 등수를 무조건 1씩 증가한다.
+                                         (EX. 공동 1위가 2명이면 다음 순위는 2위)
+*/
 
-
-
+SELECT 
+    EMP_ID
+    , EMP_NAME
+    , SALARY
+    , DENSE_RANK() OVER(ORDER BY SALARY DESC) AS 순위
+FROM EMPLOYEE
+;
